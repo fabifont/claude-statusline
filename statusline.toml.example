@@ -1,0 +1,47 @@
+# Example configuration for claude-statusline.
+# claude-statusline-project: fabifont/claude-statusline
+# Keep the marker line above. If it is removed, setup treats this as a non-project config and overwrites it.
+#
+# Preview before configuring Claude Code:
+#   claude-statusline --preview
+#   claude-statusline --preview validate
+#   claude-statusline --preview sample
+
+separator = " | "
+timezone = "Europe/Rome"
+colors_enabled = true
+
+[peak_hours]
+# 24-hour clock values from 0 to 23.
+start_hour = 13
+end_hour = 19
+
+[[items]]
+# Supported kinds: five_hour, seven_day, context, peak, model, cost
+kind = "five_hour"
+label = "5h"
+color = "cyan"
+
+[[items]]
+kind = "seven_day"
+label = "7d"
+color = "blue"
+
+[[items]]
+kind = "context"
+label = "ctx"
+color = "magenta"
+
+[[items]]
+kind = "peak"
+label = "🔥"
+color = "red"
+
+[[items]]
+kind = "model"
+color = "green"
+
+[[items]]
+kind = "cost"
+label = "$"
+color = "yellow"

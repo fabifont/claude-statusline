@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify tests
+        run: cargo test --all-targets --locked
+
+      - name: Build release binary
+        run: cargo build --release --locked
+
+      - name: Package artifact
+        run: |
+          mkdir -p dist
+          cp target/release/claude-statusline dist/
+          tar -C dist -czf claude-statusline-x86_64-unknown-linux-gnu.tar.gz claude-statusline
+          sha256sum claude-statusline-x86_64-unknown-linux-gnu.tar.gz > claude-statusline-x86_64-unknown-linux-gnu.tar.gz.sha256
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            claude-statusline-x86_64-unknown-linux-gnu.tar.gz
+            claude-statusline-x86_64-unknown-linux-gnu.tar.gz.sha256
