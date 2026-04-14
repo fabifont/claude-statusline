@@ -17,7 +17,7 @@ start_hour = 13
 end_hour = 19
 
 [[items]]
-# Supported kinds: five_hour, seven_day, context, peak, model, cost
+# Supported kinds: five_hour, seven_day, context, peak, model, cost, command
 kind = "five_hour"
 label = "5h"
 color = "cyan"
@@ -45,3 +45,12 @@ color = "green"
 kind = "cost"
 label = "$"
 color = "yellow"
+
+# Optional: external command item (scripts in any language).
+# Command is executed directly (no shell unless you explicitly call one).
+# Stdout is trimmed/collapsed and rendered as this segment.
+#[[items]]
+#kind = "command"
+#command = "sh"
+#args = ["-c", "test -f \"$HOME/.claude/.caveman-active\" && printf '\\033[38;5;172m[CAVEMAN]\\033[0m'"]
+#timeout_ms = 120

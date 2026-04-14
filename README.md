@@ -11,6 +11,7 @@ Minimal offline Claude Code status line formatter written in Rust.
 - Current model name
 - Session cost in USD
 - Ordered, configurable items through TOML
+- External command items for custom segments (any language)
 - ANSI color support (optional)
 - Built-in preview tools for configuration and rendering
 
@@ -69,6 +70,46 @@ Notes:
 - Item order in `items` controls rendered output order.
 - `colors_enabled = false` disables ANSI escapes for plain terminals.
 - `timezone` must be a valid IANA timezone, such as `UTC` or `Europe/Rome`.
+- `kind = "command"` runs external commands and renders stdout as a segment.
+
+### External command items
+
+Use `kind = "command"` to extend the status line without recompiling.
+
+Behavior:
+
+- The command is executed directly (`command` + `args`), so any language/runtime works.
+- Nothing is rendered if the command fails, times out, or prints an empty result.
+- Output is trimmed and multi-line output is collapsed into one line.
+- Default timeout is `120ms` if `timeout_ms` is omitted.
+
+Example with your CAVEMAN flag logic:
+
+```toml
+[[items]]
+kind = "command"
+command = "sh"
+args = [
+  "-c",
+  '''
+caveman_text=""
+caveman_flag="$HOME/.claude/.caveman-active"
+if [ -f "$caveman_flag" ]; then
+  caveman_mode=$(cat "$caveman_flag" 2>/dev/null)
+  if [ "$caveman_mode" = "full" ] || [ -z "$caveman_mode" ]; then
+    caveman_text=$'\033[38;5;172m[CAVEMAN]\033[0m'
+  else
+    caveman_suffix=$(echo "$caveman_mode" | tr '[:lower:]' '[:upper:]')
+    caveman_text=$'\033[38;5;172m[CAVEMAN:'"${caveman_suffix}"$']\033[0m'
+  fi
+fi
+printf "%s" "$caveman_text"
+'''
+]
+timeout_ms = 150
+```
+
+You can also call a script/binary directly, for example `command = "python3"` with a script path in `args`.
 
 ## Preview mode
 

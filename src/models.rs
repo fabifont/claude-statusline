@@ -80,6 +80,10 @@ pub struct ItemConfig {
     pub color: Option<String>,
     #[serde(default = "default_true")]
     pub enabled: bool,
+    pub command: Option<String>,
+    #[serde(default)]
+    pub args: Vec<String>,
+    pub timeout_ms: Option<u64>,
 }
 
 /// Supported status line item kinds.
@@ -92,6 +96,7 @@ pub enum ItemKind {
     Peak,
     Model,
     Cost,
+    Command,
 }
 
 /// Peak-hour configuration.
@@ -190,36 +195,54 @@ pub fn default_items() -> Vec<ItemConfig> {
             label: Some("5h".into()),
             color: Some("cyan".into()),
             enabled: true,
+            command: None,
+            args: Vec::new(),
+            timeout_ms: None,
         },
         ItemConfig {
             kind: ItemKind::SevenDay,
             label: Some("7d".into()),
             color: Some("blue".into()),
             enabled: true,
+            command: None,
+            args: Vec::new(),
+            timeout_ms: None,
         },
         ItemConfig {
             kind: ItemKind::Context,
             label: Some("ctx".into()),
             color: Some("magenta".into()),
             enabled: true,
+            command: None,
+            args: Vec::new(),
+            timeout_ms: None,
         },
         ItemConfig {
             kind: ItemKind::Peak,
             label: Some("🔥".into()),
             color: Some("red".into()),
             enabled: true,
+            command: None,
+            args: Vec::new(),
+            timeout_ms: None,
         },
         ItemConfig {
             kind: ItemKind::Model,
             label: None,
             color: Some("green".into()),
             enabled: true,
+            command: None,
+            args: Vec::new(),
+            timeout_ms: None,
         },
         ItemConfig {
             kind: ItemKind::Cost,
             label: Some("$".into()),
             color: Some("yellow".into()),
             enabled: true,
+            command: None,
+            args: Vec::new(),
+            timeout_ms: None,
         },
     ]
 }

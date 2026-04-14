@@ -145,6 +145,7 @@ fn render_explain() -> String {
         "- peak: indicator and remaining time inside configured peak window",
         "- model: active model display name or id",
         "- cost: session cost in USD",
+        "- command: run an external command and render its stdout",
         "",
         "Config keys:",
         "- separator: text used between items",
@@ -152,6 +153,7 @@ fn render_explain() -> String {
         "- colors_enabled: toggles ANSI colors on or off",
         "- peak_hours.start_hour and peak_hours.end_hour: 0..=23",
         "- items: ordered list of rendered fields",
+        "- command item fields: command, args (array), timeout_ms",
     ]
     .join("\n")
 }

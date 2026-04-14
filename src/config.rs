@@ -172,7 +172,7 @@ pub fn validate_config(outcome: &ConfigLoadOutcome) -> ValidationReport {
             enabled_count += 1;
         }
 
-        if !seen.insert(item.kind) {
+        if item.kind != ItemKind::Command && !seen.insert(item.kind) {
             report.warnings.push(format!(
                 "duplicate item kind {:?}; duplicates are allowed but can be confusing",
                 item.kind
@@ -185,6 +185,35 @@ pub fn validate_config(outcome: &ConfigLoadOutcome) -> ValidationReport {
             report.errors.push(format!(
                 "unsupported color {:?} for item {:?}",
                 color, item.kind
+            ));
+        }
+
+        let has_command_field = item.command.is_some();
+        let has_command = item
+            .command
+            .as_deref()
+            .is_some_and(|cmd| !cmd.trim().is_empty());
+        let has_command_config =
+            has_command_field || !item.args.is_empty() || item.timeout_ms.is_some();
+
+        if item.kind == ItemKind::Command {
+            if !has_command {
+                report
+                    .errors
+                    .push("item kind command requires a non-empty command field".to_string());
+            }
+
+            if let Some(timeout_ms) = item.timeout_ms
+                && timeout_ms == 0
+            {
+                report
+                    .errors
+                    .push("item kind command timeout_ms must be greater than 0".to_string());
+            }
+        } else if has_command_config {
+            report.warnings.push(format!(
+                "item kind {:?} ignores command/args/timeout_ms fields",
+                item.kind
             ));
         }
     }

@@ -9,7 +9,28 @@ fn item(kind: ItemKind, label: Option<&str>, color: Option<&str>) -> ItemConfig 
         label: label.map(ToString::to_string),
         color: color.map(ToString::to_string),
         enabled: true,
+        command: None,
+        args: Vec::new(),
+        timeout_ms: None,
     }
+}
+
+fn command_item(command: &str, args: &[&str]) -> ItemConfig {
+    ItemConfig {
+        kind: ItemKind::Command,
+        label: None,
+        color: None,
+        enabled: true,
+        command: Some(command.to_string()),
+        args: args.iter().map(ToString::to_string).collect(),
+        timeout_ms: Some(200),
+    }
+}
+
+fn command_item_with_timeout(command: &str, args: &[&str], timeout_ms: u64) -> ItemConfig {
+    let mut item = command_item(command, args);
+    item.timeout_ms = Some(timeout_ms);
+    item
 }
 
 fn fixed_now_utc() -> chrono::DateTime<chrono::Utc> {
@@ -94,6 +115,26 @@ kind = "context"
     assert_eq!(cfg.items.len(), 2);
     assert_eq!(cfg.items[0].kind, ItemKind::Model);
     assert_eq!(cfg.items[1].kind, ItemKind::Context);
+}
+
+#[test]
+fn config_parsing_supports_command_item_fields() {
+    let raw = r#"
+[[items]]
+kind = "command"
+command = "printf"
+args = ["[CAVEMAN]"]
+timeout_ms = 150
+"#;
+
+    let cfg: Config = toml::from_str(raw).expect("valid config");
+
+    assert_eq!(cfg.items.len(), 1);
+    let item = &cfg.items[0];
+    assert_eq!(item.kind, ItemKind::Command);
+    assert_eq!(item.command.as_deref(), Some("printf"));
+    assert_eq!(item.args, vec!["[CAVEMAN]".to_string()]);
+    assert_eq!(item.timeout_ms, Some(150));
 }
 
 #[test]
@@ -341,4 +382,160 @@ fn validate_config_reports_invalid_color() {
             .iter()
             .any(|error| error.contains("unsupported color"))
     );
+}
+
+#[test]
+fn validate_config_reports_missing_command_for_command_item() {
+    let outcome = ConfigLoadOutcome {
+        config: Config {
+            items: vec![ItemConfig {
+                kind: ItemKind::Command,
+                label: None,
+                color: None,
+                enabled: true,
+                command: None,
+                args: Vec::new(),
+                timeout_ms: Some(100),
+            }],
+            ..Config::default()
+        },
+        resolved_path: PathBuf::from("statusline.toml"),
+        source: ConfigSource::Fallback,
+        file_exists: true,
+        warnings: Vec::new(),
+    };
+
+    let report = validate_config(&outcome);
+    assert!(!report.is_valid());
+    assert!(
+        report
+            .errors
+            .iter()
+            .any(|error| error.contains("requires a non-empty command"))
+    );
+}
+
+#[test]
+fn validate_config_allows_multiple_command_items() {
+    let outcome = ConfigLoadOutcome {
+        config: Config {
+            items: vec![
+                command_item("printf", &["one"]),
+                command_item("printf", &["two"]),
+            ],
+            ..Config::default()
+        },
+        resolved_path: PathBuf::from("statusline.toml"),
+        source: ConfigSource::Fallback,
+        file_exists: true,
+        warnings: Vec::new(),
+    };
+
+    let report = validate_config(&outcome);
+    assert!(report.is_valid());
+    assert!(report.warnings.is_empty());
+}
+
+#[test]
+fn validate_config_warns_when_non_command_item_sets_command_fields() {
+    let outcome = ConfigLoadOutcome {
+        config: Config {
+            items: vec![ItemConfig {
+                kind: ItemKind::Model,
+                label: None,
+                color: None,
+                enabled: true,
+                command: Some("   ".to_string()),
+                args: Vec::new(),
+                timeout_ms: None,
+            }],
+            ..Config::default()
+        },
+        resolved_path: PathBuf::from("statusline.toml"),
+        source: ConfigSource::Fallback,
+        file_exists: true,
+        warnings: Vec::new(),
+    };
+
+    let report = validate_config(&outcome);
+    assert!(report.is_valid());
+    assert!(
+        report
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("ignores command/args/timeout_ms"))
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn command_item_renders_external_output() {
+    let input = parse_input("{}");
+    let config = Config {
+        separator: " | ".to_string(),
+        timezone: "UTC".to_string(),
+        colors_enabled: false,
+        peak_hours: PeakHours::default(),
+        items: vec![command_item("sh", &["-c", "printf '[CAVEMAN]' "])],
+    };
+
+    let line = build_status_line(
+        &input,
+        &config,
+        chrono_tz::UTC,
+        fixed_now_utc(),
+        fixed_now_system(),
+    );
+
+    assert_eq!(line, "[CAVEMAN]");
+}
+
+#[cfg(unix)]
+#[test]
+fn command_item_collapses_multiline_output() {
+    let input = parse_input("{}");
+    let config = Config {
+        separator: " | ".to_string(),
+        timezone: "UTC".to_string(),
+        colors_enabled: false,
+        peak_hours: PeakHours::default(),
+        items: vec![command_item("sh", &["-c", "printf 'alpha\\n\\nbeta\\n'"])],
+    };
+
+    let line = build_status_line(
+        &input,
+        &config,
+        chrono_tz::UTC,
+        fixed_now_utc(),
+        fixed_now_system(),
+    );
+
+    assert_eq!(line, "alpha beta");
+}
+
+#[cfg(unix)]
+#[test]
+fn command_item_times_out_without_rendering() {
+    let input = parse_input("{}");
+    let config = Config {
+        separator: " | ".to_string(),
+        timezone: "UTC".to_string(),
+        colors_enabled: false,
+        peak_hours: PeakHours::default(),
+        items: vec![command_item_with_timeout(
+            "sh",
+            &["-c", "sleep 1; printf late"],
+            20,
+        )],
+    };
+
+    let line = build_status_line(
+        &input,
+        &config,
+        chrono_tz::UTC,
+        fixed_now_utc(),
+        fixed_now_system(),
+    );
+
+    assert_eq!(line, "");
 }

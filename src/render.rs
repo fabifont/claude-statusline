@@ -4,7 +4,13 @@ use crate::models::{
 };
 use chrono::{DateTime, Timelike, Utc};
 use chrono_tz::Tz;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::io::Read;
+use std::process::{Command, Stdio};
+use std::thread;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
+const DEFAULT_COMMAND_TIMEOUT_MS: u64 = 120;
+const COMMAND_POLL_INTERVAL_MS: u64 = 10;
 
 struct RenderContext<'a> {
     peak_hours: &'a PeakHours,
@@ -95,6 +101,7 @@ fn render_item(item: &ItemConfig, input: &StatusInput, ctx: &RenderContext<'_>) 
                 Some(format!("{label} ${cost:.2}"))
             }
         }
+        ItemKind::Command => render_external_command_item(item),
     }?;
 
     Some(apply_color(
@@ -123,6 +130,96 @@ pub fn render_rate_limit(
 fn render_peak(label: &str, ctx: &RenderContext<'_>) -> Option<String> {
     let remaining = ctx.peak_hours.remaining_until_window_end(ctx.local_time)?;
     Some(format!("{label} {}", format_duration(remaining)))
+}
+
+fn render_external_command_item(item: &ItemConfig) -> Option<String> {
+    let command = item.command.as_deref()?.trim();
+    if command.is_empty() {
+        return None;
+    }
+
+    let timeout_ms = item.timeout_ms.unwrap_or(DEFAULT_COMMAND_TIMEOUT_MS).max(1);
+    let output = run_external_command(command, &item.args, timeout_ms)?;
+
+    let label = item.label.as_deref().map(str::trim).unwrap_or("");
+    if label.is_empty() {
+        Some(output)
+    } else {
+        Some(format!("{label} {output}"))
+    }
+}
+
+fn run_external_command(command: &str, args: &[String], timeout_ms: u64) -> Option<String> {
+    let deadline = Instant::now().checked_add(Duration::from_millis(timeout_ms))?;
+    let mut child = Command::new(command)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .ok()?;
+    let stdout = match child.stdout.take() {
+        Some(stdout) => stdout,
+        None => {
+            let _ = child.kill();
+            let _ = child.wait();
+            return None;
+        }
+    };
+    let mut stdout_reader = Some(thread::spawn(move || {
+        let mut stdout = stdout;
+        let mut bytes = Vec::new();
+        stdout.read_to_end(&mut bytes).ok()?;
+        Some(bytes)
+    }));
+
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let stdout = stdout_reader.take()?.join().ok().flatten()?;
+                if !status.success() {
+                    return None;
+                }
+
+                return normalize_external_output(&String::from_utf8_lossy(&stdout));
+            }
+            Ok(None) => {
+                if Instant::now() >= deadline {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    if let Some(reader) = stdout_reader.take() {
+                        let _ = reader.join();
+                    }
+                    return None;
+                }
+                thread::sleep(Duration::from_millis(COMMAND_POLL_INTERVAL_MS));
+            }
+            Err(_) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                if let Some(reader) = stdout_reader.take() {
+                    let _ = reader.join();
+                }
+                return None;
+            }
+        }
+    }
+}
+
+fn normalize_external_output(raw: &str) -> Option<String> {
+    let collapsed = raw
+        .trim()
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    if collapsed.is_empty() {
+        None
+    } else {
+        Some(collapsed)
+    }
 }
 
 fn seconds_until(reset_epoch_seconds: i64, now_system: SystemTime) -> Option<Duration> {
