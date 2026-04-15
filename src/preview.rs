@@ -141,6 +141,7 @@ fn render_explain() -> String {
         "Supported item kinds:",
         "- five_hour: 5-hour rate limit percentage and reset duration",
         "- seven_day: 7-day rate limit percentage and reset duration",
+        "- limits_age: age of cached fallback rate-limit data",
         "- context: context window used percentage",
         "- peak: indicator and remaining time inside configured peak window",
         "- model: active model display name or id",
@@ -199,5 +200,6 @@ fn sample_input() -> StatusInput {
         cost: Some(Cost {
             total_cost_usd: Some(12.34),
         }),
+        rate_limits_cache_age: None,
     }
 }

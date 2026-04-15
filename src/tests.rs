@@ -174,6 +174,56 @@ fn missing_fields_show_rate_limit_placeholders() {
 }
 
 #[test]
+fn limits_age_item_renders_only_when_cache_age_exists() {
+    let input = StatusInput {
+        rate_limits_cache_age: Some(RateLimitsCacheAge {
+            five_hour_seconds: Some(180),
+            seven_day_seconds: Some(60),
+        }),
+        ..StatusInput::default()
+    };
+    let config = Config {
+        separator: " | ".to_string(),
+        timezone: "UTC".to_string(),
+        colors_enabled: false,
+        peak_hours: PeakHours::default(),
+        items: vec![item(ItemKind::LimitsAge, Some("cached"), None)],
+    };
+
+    let line = build_status_line(
+        &input,
+        &config,
+        chrono_tz::UTC,
+        fixed_now_utc(),
+        fixed_now_system(),
+    );
+
+    assert_eq!(line, "cached 3m");
+}
+
+#[test]
+fn limits_age_item_is_hidden_without_cache_age() {
+    let input = StatusInput::default();
+    let config = Config {
+        separator: " | ".to_string(),
+        timezone: "UTC".to_string(),
+        colors_enabled: false,
+        peak_hours: PeakHours::default(),
+        items: vec![item(ItemKind::LimitsAge, Some("cached"), None)],
+    };
+
+    let line = build_status_line(
+        &input,
+        &config,
+        chrono_tz::UTC,
+        fixed_now_utc(),
+        fixed_now_system(),
+    );
+
+    assert_eq!(line, "");
+}
+
+#[test]
 fn model_and_cost_require_real_values() {
     let input = parse_input(r#"{"model":{},"cost":{}}"#);
     let config = Config {

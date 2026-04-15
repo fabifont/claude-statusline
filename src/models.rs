@@ -10,6 +10,15 @@ pub struct StatusInput {
     pub context_window: Option<ContextWindow>,
     pub rate_limits: Option<RateLimits>,
     pub cost: Option<Cost>,
+    #[serde(default, skip_deserializing)]
+    pub rate_limits_cache_age: Option<RateLimitsCacheAge>,
+}
+
+/// Metadata for cached rate-limit windows used as startup fallbacks.
+#[derive(Debug, Default, Clone)]
+pub struct RateLimitsCacheAge {
+    pub five_hour_seconds: Option<u64>,
+    pub seven_day_seconds: Option<u64>,
 }
 
 /// Active model metadata.
@@ -92,6 +101,7 @@ pub struct ItemConfig {
 pub enum ItemKind {
     FiveHour,
     SevenDay,
+    LimitsAge,
     Context,
     Peak,
     Model,

@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 
+mod cache;
 pub mod cli;
 pub mod config;
 pub mod error;
@@ -20,7 +21,7 @@ pub use format::{
 };
 pub use models::{
     ClockTime, Config, ContextWindow, Cost, ItemConfig, ItemKind, Model, PeakHours,
-    RateLimitWindow, RateLimits, StatusInput,
+    RateLimitWindow, RateLimits, RateLimitsCacheAge, StatusInput,
 };
 pub use render::{build_status_line, parse_input, render_rate_limit};
 pub use setup::setup_claude_config;
@@ -70,14 +71,18 @@ fn run_normal_mode(stdin_override: Option<&str>) -> Result<String, error::Status
     };
 
     let input = parse_input(&input_buf);
+    let mut render_input = input.clone();
+    let now_system = std::time::SystemTime::now();
+    cache::hydrate_missing_rate_limits(&mut render_input, now_system);
+    cache::persist_rate_limits(&input, now_system);
     let tz = parse_timezone_or_default(&config.timezone);
 
     Ok(build_status_line(
-        &input,
+        &render_input,
         &config,
         tz,
         chrono::Utc::now(),
-        std::time::SystemTime::now(),
+        now_system,
     ))
 }
 

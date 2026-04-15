@@ -6,6 +6,8 @@ Minimal offline Claude Code status line formatter written in Rust.
 
 - 5-hour rate limit percentage and remaining time
 - 7-day rate limit percentage and remaining time
+- Startup fallback cache for 5h/7d windows when Claude omits `rate_limits`
+- Optional stale marker segment (`limits_age`) for cached fallback data
 - Context-window usage percentage
 - Peak-hours indicator with remaining time in the configured window
 - Current model name
@@ -71,6 +73,19 @@ Notes:
 - `colors_enabled = false` disables ANSI escapes for plain terminals.
 - `timezone` must be a valid IANA timezone, such as `UTC` or `Europe/Rome`.
 - `kind = "command"` runs external commands and renders stdout as a segment.
+- `kind = "limits_age"` renders only when cached fallback data is being used.
+
+### Rate-limit cache
+
+When Claude's current stdin payload omits `rate_limits`, `claude-statusline` reuses the last valid 5-hour and 7-day windows from a local cache so startup does not show placeholders immediately.
+
+Default cache path:
+
+- `~/.cache/claude-statusline/rate_limits.json`
+
+Optional override:
+
+- `CLAUDE_STATUSLINE_CACHE_PATH=/custom/path/rate_limits.json`
 
 ### External command items
 

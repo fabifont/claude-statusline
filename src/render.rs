@@ -74,6 +74,10 @@ fn render_item(item: &ItemConfig, input: &StatusInput, ctx: &RenderContext<'_>) 
                     .unwrap_or_else(|| format!("{label} --")),
             )
         }
+        ItemKind::LimitsAge => {
+            let label = item.label.as_deref().unwrap_or("cached");
+            render_limits_age(label, input)
+        }
         ItemKind::Context => {
             let pct = valid_f64(input.context_window.as_ref()?.used_percentage?)?;
             Some(format!(
@@ -130,6 +134,18 @@ pub fn render_rate_limit(
 fn render_peak(label: &str, ctx: &RenderContext<'_>) -> Option<String> {
     let remaining = ctx.peak_hours.remaining_until_window_end(ctx.local_time)?;
     Some(format!("{label} {}", format_duration(remaining)))
+}
+
+fn render_limits_age(label: &str, input: &StatusInput) -> Option<String> {
+    let cache_age = input.rate_limits_cache_age.as_ref()?;
+    let age_secs = [cache_age.five_hour_seconds, cache_age.seven_day_seconds]
+        .into_iter()
+        .flatten()
+        .max()?;
+    Some(format!(
+        "{label} {}",
+        format_duration(Duration::from_secs(age_secs))
+    ))
 }
 
 fn render_external_command_item(item: &ItemConfig) -> Option<String> {
