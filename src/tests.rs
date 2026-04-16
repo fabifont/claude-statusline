@@ -40,6 +40,13 @@ fn fixed_now_utc() -> chrono::DateTime<chrono::Utc> {
         .expect("valid timestamp")
 }
 
+fn fixed_now_utc_at(hour: u32, minute: u32, second: u32) -> chrono::DateTime<chrono::Utc> {
+    chrono::Utc
+        .with_ymd_and_hms(2024, 1, 1, hour, minute, second)
+        .single()
+        .expect("valid timestamp")
+}
+
 fn fixed_now_system() -> SystemTime {
     UNIX_EPOCH + Duration::from_secs(10_000)
 }
@@ -92,6 +99,56 @@ fn peak_hours_cross_midnight_window() {
         peak.remaining_until_window_end(ClockTime::from_hms(12, 0, 0))
             .is_none()
     );
+}
+
+#[test]
+fn peak_item_renders_start_time_before_window() {
+    let input = parse_input("{}");
+    let config = Config {
+        separator: " | ".to_string(),
+        timezone: "UTC".to_string(),
+        colors_enabled: false,
+        peak_hours: PeakHours {
+            start_hour: 13,
+            end_hour: 19,
+        },
+        items: vec![item(ItemKind::Peak, Some("🔥"), None)],
+    };
+
+    let line = build_status_line(
+        &input,
+        &config,
+        chrono_tz::UTC,
+        fixed_now_utc_at(10, 0, 0),
+        fixed_now_system(),
+    );
+
+    assert_eq!(line, "🔥 starts 13:00");
+}
+
+#[test]
+fn peak_item_renders_start_time_after_window() {
+    let input = parse_input("{}");
+    let config = Config {
+        separator: " | ".to_string(),
+        timezone: "UTC".to_string(),
+        colors_enabled: false,
+        peak_hours: PeakHours {
+            start_hour: 13,
+            end_hour: 19,
+        },
+        items: vec![item(ItemKind::Peak, Some("🔥"), None)],
+    };
+
+    let line = build_status_line(
+        &input,
+        &config,
+        chrono_tz::UTC,
+        fixed_now_utc_at(21, 0, 0),
+        fixed_now_system(),
+    );
+
+    assert_eq!(line, "🔥 starts 13:00");
 }
 
 #[test]

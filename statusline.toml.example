@@ -39,6 +39,7 @@ label = "ctx"
 color = "magenta"
 
 [[items]]
+# Renders remaining time while in-window, otherwise shows next start time.
 kind = "peak"
 label = "🔥"
 color = "red"

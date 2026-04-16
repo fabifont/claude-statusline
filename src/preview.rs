@@ -143,7 +143,7 @@ fn render_explain() -> String {
         "- seven_day: 7-day rate limit percentage and reset duration",
         "- limits_age: age of cached fallback rate-limit data",
         "- context: context window used percentage",
-        "- peak: indicator and remaining time inside configured peak window",
+        "- peak: remaining time in window, otherwise next start time",
         "- model: active model display name or id",
         "- cost: session cost in USD",
         "- command: run an external command and render its stdout",

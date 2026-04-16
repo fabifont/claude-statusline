@@ -9,7 +9,7 @@ Minimal offline Claude Code status line formatter written in Rust.
 - Startup fallback cache for 5h/7d windows when Claude omits `rate_limits`
 - Optional stale marker segment (`limits_age`) for cached fallback data
 - Context-window usage percentage
-- Peak-hours indicator with remaining time in the configured window
+- Peak-hours indicator with remaining time in-window and start time outside it
 - Current model name
 - Session cost in USD
 - Ordered, configurable items through TOML

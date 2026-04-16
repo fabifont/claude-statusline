@@ -119,13 +119,19 @@ pub struct PeakHours {
 }
 
 impl PeakHours {
-    /// Return remaining duration until peak window end for the provided local clock time.
-    pub fn remaining_until_window_end(&self, local_time: ClockTime) -> Option<Duration> {
+    fn window_bounds(&self) -> Option<(u32, u32)> {
         let start_secs = self.start_hour.checked_mul(3600)?;
         let end_secs = self.end_hour.checked_mul(3600)?;
         if start_secs >= SECONDS_PER_DAY || end_secs >= SECONDS_PER_DAY || start_secs == end_secs {
             return None;
         }
+
+        Some((start_secs, end_secs))
+    }
+
+    /// Return remaining duration until peak window end for the provided local clock time.
+    pub fn remaining_until_window_end(&self, local_time: ClockTime) -> Option<Duration> {
+        let (start_secs, end_secs) = self.window_bounds()?;
 
         let now_secs = local_time.seconds_since_midnight();
         let remaining_secs = if start_secs < end_secs {
@@ -142,6 +148,12 @@ impl PeakHours {
         };
 
         Some(Duration::from_secs(u64::from(remaining_secs)))
+    }
+
+    /// Return peak-window start time (HH:MM:SS) when the configuration is valid.
+    pub fn window_start_time(&self) -> Option<ClockTime> {
+        self.window_bounds()?;
+        Some(ClockTime::from_hms(self.start_hour, 0, 0))
     }
 }
 

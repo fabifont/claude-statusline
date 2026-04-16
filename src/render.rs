@@ -132,8 +132,15 @@ pub fn render_rate_limit(
 }
 
 fn render_peak(label: &str, ctx: &RenderContext<'_>) -> Option<String> {
-    let remaining = ctx.peak_hours.remaining_until_window_end(ctx.local_time)?;
-    Some(format!("{label} {}", format_duration(remaining)))
+    if let Some(remaining) = ctx.peak_hours.remaining_until_window_end(ctx.local_time) {
+        return Some(format!("{label} {}", format_duration(remaining)));
+    }
+
+    let start = ctx.peak_hours.window_start_time()?;
+    Some(format!(
+        "{label} starts {:02}:{:02}",
+        start.hour, start.minute
+    ))
 }
 
 fn render_limits_age(label: &str, input: &StatusInput) -> Option<String> {
