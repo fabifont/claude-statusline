@@ -4,7 +4,11 @@ use crate::models::{
 };
 use chrono::{DateTime, Timelike, Utc};
 use chrono_tz::Tz;
+use serde_json::Value;
+use std::env;
+use std::fs;
 use std::io::Read;
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -148,12 +152,40 @@ fn render_peak(label: &str, ctx: &RenderContext<'_>) -> Option<String> {
 }
 
 fn render_effort(label: &str, input: &StatusInput) -> Option<String> {
-    let effort = input.effort.as_deref()?.trim();
+    let effort = input
+        .effort
+        .as_deref()
+        .map(str::to_string)
+        .or_else(|| env::var("CLAUDE_CODE_EFFORT_LEVEL").ok())
+        .or_else(effort_from_settings)?;
+
+    let effort = effort.trim();
     if effort.is_empty() || effort.eq_ignore_ascii_case("unset") {
         return None;
     }
 
     Some(format!("{label} {effort}"))
+}
+
+fn effort_from_settings() -> Option<String> {
+    let settings_path = claude_settings_path()?;
+    let raw = fs::read_to_string(settings_path).ok()?;
+    let parsed: Value = serde_json::from_str(&raw).ok()?;
+    parsed
+        .get("effortLevel")
+        .and_then(Value::as_str)
+        .map(str::to_string)
+}
+
+fn claude_settings_path() -> Option<PathBuf> {
+    if let Ok(config_dir) = env::var("CLAUDE_CONFIG_DIR")
+        && !config_dir.trim().is_empty()
+    {
+        return Some(PathBuf::from(config_dir).join("settings.json"));
+    }
+
+    let home = env::var_os("HOME")?;
+    Some(PathBuf::from(home).join(".claude").join("settings.json"))
 }
 
 fn render_limits_age(label: &str, input: &StatusInput) -> Option<String> {

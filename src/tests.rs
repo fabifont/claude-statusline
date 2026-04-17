@@ -249,6 +249,28 @@ fn effort_item_is_hidden_without_effort_level_field() {
 }
 
 #[test]
+fn effort_item_renders_effort_alias_field() {
+    let input = parse_input(r#"{"effort":"xhigh"}"#);
+    let config = Config {
+        separator: " | ".to_string(),
+        timezone: "UTC".to_string(),
+        colors_enabled: false,
+        peak_hours: PeakHours::default(),
+        items: vec![item(ItemKind::Effort, Some("🧠"), None)],
+    };
+
+    let line = build_status_line(
+        &input,
+        &config,
+        chrono_tz::UTC,
+        fixed_now_utc(),
+        fixed_now_system(),
+    );
+
+    assert_eq!(line, "🧠 xhigh");
+}
+
+#[test]
 fn missing_fields_show_rate_limit_placeholders() {
     let input = parse_input(r#"{"context_window":{"used_percentage":42.0}}"#);
     let config = Config {

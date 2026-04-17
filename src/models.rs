@@ -1,4 +1,5 @@
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
+use serde_json::Value;
 use std::time::Duration;
 
 const SECONDS_PER_DAY: u32 = 24 * 60 * 60;
@@ -10,10 +11,29 @@ pub struct StatusInput {
     pub context_window: Option<ContextWindow>,
     pub rate_limits: Option<RateLimits>,
     pub cost: Option<Cost>,
-    #[serde(rename = "effortLevel")]
+    #[serde(
+        rename = "effortLevel",
+        alias = "effort",
+        alias = "effort_level",
+        default,
+        deserialize_with = "deserialize_effort_value"
+    )]
     pub effort: Option<String>,
     #[serde(default, skip_deserializing)]
     pub rate_limits_cache_age: Option<RateLimitsCacheAge>,
+}
+
+fn deserialize_effort_value<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<Value>::deserialize(deserializer)?;
+    Ok(value.and_then(|raw| match raw {
+        Value::String(text) => Some(text),
+        Value::Number(number) => Some(number.to_string()),
+        Value::Bool(flag) => Some(flag.to_string()),
+        _ => None,
+    }))
 }
 
 /// Metadata for cached rate-limit windows used as startup fallbacks.
