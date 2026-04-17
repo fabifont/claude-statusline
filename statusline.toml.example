@@ -17,7 +17,7 @@ start_hour = 13
 end_hour = 19
 
 [[items]]
-# Supported kinds: five_hour, seven_day, limits_age, context, peak, model, cost, command
+# Supported kinds: five_hour, seven_day, limits_age, context, peak, model, effort, cost, command
 kind = "five_hour"
 label = "5h"
 color = "cyan"
@@ -47,6 +47,11 @@ color = "red"
 [[items]]
 kind = "model"
 color = "green"
+
+[[items]]
+kind = "effort"
+label = "🧠"
+color = "bright_black"
 
 [[items]]
 kind = "cost"

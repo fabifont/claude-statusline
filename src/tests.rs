@@ -201,6 +201,51 @@ fn parse_input_tolerates_invalid_json() {
     assert!(parsed.context_window.is_none());
     assert!(parsed.rate_limits.is_none());
     assert!(parsed.cost.is_none());
+    assert!(parsed.effort.is_none());
+}
+
+#[test]
+fn effort_item_renders_string_value() {
+    let input = parse_input(r#"{"effort":"high"}"#);
+    let config = Config {
+        separator: " | ".to_string(),
+        timezone: "UTC".to_string(),
+        colors_enabled: false,
+        peak_hours: PeakHours::default(),
+        items: vec![item(ItemKind::Effort, Some("eff"), None)],
+    };
+
+    let line = build_status_line(
+        &input,
+        &config,
+        chrono_tz::UTC,
+        fixed_now_utc(),
+        fixed_now_system(),
+    );
+
+    assert_eq!(line, "eff high");
+}
+
+#[test]
+fn effort_item_renders_nested_level_value() {
+    let input = parse_input(r#"{"effort":{"level":"medium"}}"#);
+    let config = Config {
+        separator: " | ".to_string(),
+        timezone: "UTC".to_string(),
+        colors_enabled: false,
+        peak_hours: PeakHours::default(),
+        items: vec![item(ItemKind::Effort, None, None)],
+    };
+
+    let line = build_status_line(
+        &input,
+        &config,
+        chrono_tz::UTC,
+        fixed_now_utc(),
+        fixed_now_system(),
+    );
+
+    assert_eq!(line, "effort medium");
 }
 
 #[test]

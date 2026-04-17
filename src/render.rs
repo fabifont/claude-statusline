@@ -4,6 +4,7 @@ use crate::models::{
 };
 use chrono::{DateTime, Timelike, Utc};
 use chrono_tz::Tz;
+use serde_json::Value;
 use std::io::Read;
 use std::process::{Command, Stdio};
 use std::thread;
@@ -86,6 +87,10 @@ fn render_item(item: &ItemConfig, input: &StatusInput, ctx: &RenderContext<'_>) 
                 format_pct(pct)
             ))
         }
+        ItemKind::Effort => {
+            let label = item.label.as_deref().unwrap_or("effort");
+            render_effort(label, input)
+        }
         ItemKind::Peak => render_peak(item.label.as_deref().unwrap_or("🔥"), ctx),
         ItemKind::Model => {
             let model = input.model.as_ref()?;
@@ -141,6 +146,31 @@ fn render_peak(label: &str, ctx: &RenderContext<'_>) -> Option<String> {
         "{label} starts {:02}:{:02}",
         start.hour, start.minute
     ))
+}
+
+fn render_effort(label: &str, input: &StatusInput) -> Option<String> {
+    let effort = effort_value_to_text(input.effort.as_ref()?)?;
+    Some(format!("{label} {effort}"))
+}
+
+fn effort_value_to_text(value: &Value) -> Option<String> {
+    match value {
+        Value::String(text) => {
+            let text = text.trim();
+            if text.is_empty() {
+                None
+            } else {
+                Some(text.to_string())
+            }
+        }
+        Value::Number(number) => Some(number.to_string()),
+        Value::Bool(flag) => Some(flag.to_string()),
+        Value::Object(map) => ["display_name", "display", "label", "level", "value"]
+            .iter()
+            .find_map(|key| map.get(*key).and_then(effort_value_to_text)),
+        Value::Array(values) => values.iter().find_map(effort_value_to_text),
+        Value::Null => None,
+    }
 }
 
 fn render_limits_age(label: &str, input: &StatusInput) -> Option<String> {

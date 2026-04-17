@@ -11,6 +11,7 @@ Minimal offline Claude Code status line formatter written in Rust.
 - Context-window usage percentage
 - Peak-hours indicator with remaining time in-window and start time outside it
 - Current model name
+- Effort indicator
 - Session cost in USD
 - Ordered, configurable items through TOML
 - External command items for custom segments (any language)

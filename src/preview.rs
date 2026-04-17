@@ -143,6 +143,7 @@ fn render_explain() -> String {
         "- seven_day: 7-day rate limit percentage and reset duration",
         "- limits_age: age of cached fallback rate-limit data",
         "- context: context window used percentage",
+        "- effort: model effort value from Claude payload",
         "- peak: remaining time in window, otherwise next start time",
         "- model: active model display name or id",
         "- cost: session cost in USD",
@@ -200,6 +201,7 @@ fn sample_input() -> StatusInput {
         cost: Some(Cost {
             total_cost_usd: Some(12.34),
         }),
+        effort: Some(serde_json::Value::String("medium".to_string())),
         rate_limits_cache_age: None,
     }
 }
