@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use serde_json::Value;
 use std::time::Duration;
 
 const SECONDS_PER_DAY: u32 = 24 * 60 * 60;
@@ -11,7 +10,8 @@ pub struct StatusInput {
     pub context_window: Option<ContextWindow>,
     pub rate_limits: Option<RateLimits>,
     pub cost: Option<Cost>,
-    pub effort: Option<Value>,
+    #[serde(rename = "effortLevel")]
+    pub effort: Option<String>,
     #[serde(default, skip_deserializing)]
     pub rate_limits_cache_age: Option<RateLimitsCacheAge>,
 }
@@ -243,15 +243,6 @@ pub fn default_items() -> Vec<ItemConfig> {
             timeout_ms: None,
         },
         ItemConfig {
-            kind: ItemKind::Effort,
-            label: Some("eff".into()),
-            color: Some("bright_black".into()),
-            enabled: true,
-            command: None,
-            args: Vec::new(),
-            timeout_ms: None,
-        },
-        ItemConfig {
             kind: ItemKind::Peak,
             label: Some("🔥".into()),
             color: Some("red".into()),
@@ -264,6 +255,15 @@ pub fn default_items() -> Vec<ItemConfig> {
             kind: ItemKind::Model,
             label: None,
             color: Some("green".into()),
+            enabled: true,
+            command: None,
+            args: Vec::new(),
+            timeout_ms: None,
+        },
+        ItemConfig {
+            kind: ItemKind::Effort,
+            label: Some("🧠".into()),
+            color: Some("bright_black".into()),
             enabled: true,
             command: None,
             args: Vec::new(),

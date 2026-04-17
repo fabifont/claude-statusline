@@ -205,8 +205,8 @@ fn parse_input_tolerates_invalid_json() {
 }
 
 #[test]
-fn effort_item_renders_string_value() {
-    let input = parse_input(r#"{"effort":"high"}"#);
+fn effort_item_renders_effort_level_field() {
+    let input = parse_input(r#"{"effortLevel":"high"}"#);
     let config = Config {
         separator: " | ".to_string(),
         timezone: "UTC".to_string(),
@@ -227,7 +227,7 @@ fn effort_item_renders_string_value() {
 }
 
 #[test]
-fn effort_item_renders_nested_level_value() {
+fn effort_item_is_hidden_without_effort_level_field() {
     let input = parse_input(r#"{"effort":{"level":"medium"}}"#);
     let config = Config {
         separator: " | ".to_string(),
@@ -245,7 +245,7 @@ fn effort_item_renders_nested_level_value() {
         fixed_now_system(),
     );
 
-    assert_eq!(line, "effort medium");
+    assert_eq!(line, "");
 }
 
 #[test]

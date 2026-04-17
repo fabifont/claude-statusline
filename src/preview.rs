@@ -201,7 +201,7 @@ fn sample_input() -> StatusInput {
         cost: Some(Cost {
             total_cost_usd: Some(12.34),
         }),
-        effort: Some(serde_json::Value::String("medium".to_string())),
+        effort: Some("medium".to_string()),
         rate_limits_cache_age: None,
     }
 }
